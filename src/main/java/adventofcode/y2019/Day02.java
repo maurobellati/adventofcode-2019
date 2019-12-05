@@ -90,7 +90,6 @@ Find the input noun and verb that cause the program to produce the output 196907
 
  */
 class Day02 extends Base {
-  @Nested
   static class Part1Test {
 
     static Stream<Arguments> examples() {
@@ -104,7 +103,7 @@ class Day02 extends Base {
 
     @ParameterizedTest
     @MethodSource
-    public void examples(final String input, String expected) {
+    void examples(final String input, String expected) {
       Program program = Program.fromString(input);
       program.execute();
       assertThat(program.getMemory()).isEqualTo(Program.fromString(expected).getMemory());
@@ -122,10 +121,10 @@ class Day02 extends Base {
     }
 
     static Program fromString(String input) {
-      return new Program(Arrays.stream(input.split(",")).map(Integer::parseInt).collect(toList()));
+      return new Program(splitAndMap(input,",", Integer::parseInt));
     }
 
-    public List<Integer> getMemory() {
+    List<Integer> getMemory() {
       return memory;
     }
 

@@ -46,8 +46,6 @@ What is the sum of the fuel requirements for all of the modules on your spacecra
 
  */
 class Day01 extends Base {
-
-  @Nested
   static class Part1Test {
 
     static Stream<Arguments> examples() {
@@ -60,12 +58,11 @@ class Day01 extends Base {
 
     @ParameterizedTest
     @MethodSource
-    public void examples(final String input, Integer expected) {
+    void examples(final String input, Integer expected) {
       assertThat(new Day01(parseCsv(input)).part1()).isEqualTo(expected);
     }
   }
 
-  @Nested
   static class Part2Test {
 
     static Stream<Arguments> examples() {
@@ -78,7 +75,7 @@ class Day01 extends Base {
 
     @ParameterizedTest
     @MethodSource
-    public void examples(final String input, Integer expected) {
+    void examples(final String input, Integer expected) {
       assertThat(new Day01(parseCsv(input)).part2()).isEqualTo(expected);
     }
   }

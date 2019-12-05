@@ -3,11 +3,14 @@ package adventofcode.y2019;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.io.Resources.getResource;
 import static com.google.common.io.Resources.readLines;
+import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.Splitter;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 public abstract class Base {
@@ -29,6 +32,14 @@ public abstract class Base {
 
   static List<String> parseCsv(final String input) {
     return CSV_SPLITTER.splitToList(input);
+  }
+
+  static <T> List<T> splitAndMap(String aString, String splitOn, Function<String, T> mapper) {
+    return Arrays.stream(aString.split(splitOn))
+                 .map(String::strip)
+                 .filter(it -> !it.isBlank())
+                 .map(mapper)
+                 .collect(toList());
   }
 
   List<String> inputList() {
