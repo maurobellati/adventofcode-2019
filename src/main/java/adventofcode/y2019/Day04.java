@@ -47,19 +47,17 @@ How many different passwords within the range given in your puzzle input meet al
  */
 @SuppressWarnings("FieldNamingConvention")
 class Day04 {
-  static class Part1Test {
+  static class Test {
     @ParameterizedTest
     @CsvSource({
                  "111111, true",
                  "223450, false",
                  "123789, false",
                })
-    void examples(final Integer input, boolean expected) {
+    void part01(final Integer input, boolean expected) {
       assertThat(PasswordCriteria.part01(input)).isEqualTo(expected);
     }
-  }
 
-  static class Part2Test {
     @ParameterizedTest
     @CsvSource({
                  "112233, true",
@@ -67,7 +65,7 @@ class Day04 {
                  "123444, false",
                  "122234, false",
                })
-    void examples(final Integer input, boolean expected) {
+    void part02(final Integer input, boolean expected) {
       assertThat(PasswordCriteria.part02(input)).isEqualTo(expected);
     }
   }
@@ -124,8 +122,8 @@ class Day04 {
   }
 
   public static void main(String args[]) {
-    int min = 273025;
-    int max = 767253;
+    var min = 273025;
+    var max = 767253;
     out.println(part1(min, max)); // 910
     out.println(part2(min, max)); // 791
   }

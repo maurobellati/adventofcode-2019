@@ -2,16 +2,13 @@ package adventofcode.y2019;
 
 import static java.lang.System.out;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.List;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 /*
 --- Day 1: The Tyranny of the Rocket Equation ---
@@ -46,37 +43,26 @@ What is the sum of the fuel requirements for all of the modules on your spacecra
 
  */
 class Day01 extends Base {
-  static class Part1Test {
 
-    static Stream<Arguments> examples() {
-      return Stream.of(
-        arguments("14", 2),
-        arguments("1969", 654),
-        arguments("100756", 33583)
-      );
-    }
-
+  static class Test {
     @ParameterizedTest
-    @MethodSource
-    void examples(final String input, Integer expected) {
-      assertThat(new Day01(parseCsv(input)).part1()).isEqualTo(expected);
-    }
-  }
-
-  static class Part2Test {
-
-    static Stream<Arguments> examples() {
-      return Stream.of(
-        arguments("14", 2),
-        arguments("1969", 966),
-        arguments("100756", 50346)
-      );
-    }
-
-    @ParameterizedTest
-    @MethodSource
-    void examples(final String input, Integer expected) {
+    @CsvSource({
+                 "14, 2",
+                 "1969, 966",
+                 "100756, 50346",
+               })
+    void part02(final String input, Integer expected) {
       assertThat(new Day01(parseCsv(input)).part2()).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+                 "14, 2",
+                 "1969, 654",
+                 "100756, 33583",
+               })
+    void part01(final String input, Integer expected) {
+      assertThat(new Day01(parseCsv(input)).part1()).isEqualTo(expected);
     }
   }
 
@@ -95,7 +81,7 @@ class Day01 extends Base {
 
   Integer calculateFuelOfFuelWithDoWhile(Integer mass) {
     Integer result = 0;
-    Integer fuel = calculateFuel(mass);
+    var fuel = calculateFuel(mass);
     do {
       result += fuel;
     }
@@ -111,7 +97,7 @@ class Day01 extends Base {
     if (mass <= 0) {
       return 0;
     }
-    Integer fuel = calculateFuel(mass);
+    var fuel = calculateFuel(mass);
     return fuel + calculateFuelRecursive(fuel);
   }
 

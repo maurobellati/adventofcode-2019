@@ -123,8 +123,8 @@ class Day03 extends Base {
     private final Point unitVector;
   }
 
-  static class Part1Test {
-    static Stream<Arguments> examples() {
+  static class Test {
+    static Stream<Arguments> part01() {
       return Stream.of(
         arguments(asList("R3, U3", "U6, R3, D3"), 6),
         arguments(asList("R8, U5, L5, D3", "U7, R6, D4, L4"), 6),
@@ -133,15 +133,7 @@ class Day03 extends Base {
       );
     }
 
-    @ParameterizedTest
-    @MethodSource
-    void examples(final List<String> input, Integer expected) {
-      assertThat(new Day03(input).part1()).isEqualTo(expected);
-    }
-  }
-
-  static class Part2Test {
-    static Stream<Arguments> examples() {
+    static Stream<Arguments> part02() {
       return Stream.of(
         arguments(asList("R3, U3", "U6, R3, D3"), 18),
         arguments(asList("R8, U5, L5, D3", "U7, R6, D4, L4"), 30),
@@ -152,7 +144,13 @@ class Day03 extends Base {
 
     @ParameterizedTest
     @MethodSource
-    void examples(final List<String> input, Integer expected) {
+    void part01(final List<String> input, Integer expected) {
+      assertThat(new Day03(input).part1()).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    void part02(final List<String> input, Integer expected) {
       assertThat(new Day03(input).part2()).isEqualTo(expected);
     }
   }

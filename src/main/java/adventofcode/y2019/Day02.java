@@ -1,19 +1,13 @@
 package adventofcode.y2019;
 
 import static java.lang.System.out;
-import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.util.Lists.newArrayList;
-import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.CsvSource;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 
 /*
 --- Day 2: 1202 Program Alarm ---
@@ -90,21 +84,16 @@ Find the input noun and verb that cause the program to produce the output 196907
 
  */
 class Day02 extends Base {
-  static class Part1Test {
-
-    static Stream<Arguments> examples() {
-      return Stream.of(
-        arguments("1,0,0,0,99", "2,0,0,0,99"),
-        arguments("2,3,0,3,99", "2,3,0,6,99"),
-        arguments("2,4,4,5,99,0", "2,4,4,5,99,9801"),
-        arguments("1,1,1,4,99,5,6,0,99", "30,1,1,4,2,5,6,0,99")
-      );
-    }
-
+  static class Test {
     @ParameterizedTest
-    @MethodSource
+    @CsvSource({
+                 "'1,0,0,0,99', '2,0,0,0,99'",
+                 "'2,3,0,3,99', '2,3,0,6,99'",
+                 "'2,4,4,5,99,0', '2,4,4,5,99,9801'",
+                 "'1,1,1,4,99,5,6,0,99', '30,1,1,4,2,5,6,0,99'"
+               })
     void examples(final String input, String expected) {
-      Program program = Program.fromString(input);
+      var program = Program.fromString(input);
       program.execute();
       assertThat(program.getMemory()).isEqualTo(Program.fromString(expected).getMemory());
     }
@@ -121,11 +110,7 @@ class Day02 extends Base {
     }
 
     static Program fromString(String input) {
-      return new Program(splitAndMap(input,",", Integer::parseInt));
-    }
-
-    List<Integer> getMemory() {
-      return memory;
+      return new Program(splitAndMap(input, ",", Integer::parseInt));
     }
 
     Integer execute() {
@@ -140,16 +125,20 @@ class Day02 extends Base {
       return run();
     }
 
+    List<Integer> getMemory() {
+      return memory;
+    }
+
     private Integer run() {
-      int i = 0;
+      var i = 0;
       while (i < memory.size()) {
-        Integer opCode = memory.get(i);
+        var opCode = memory.get(i);
         if (opCode == 99) {
           break;
         }
-        Integer x = memory.get(memory.get(i + 1));
-        Integer y = memory.get(memory.get(i + 2));
-        Integer destinationIndex = memory.get(i + 3);
+        var x = memory.get(memory.get(i + 1));
+        var y = memory.get(memory.get(i + 2));
+        var destinationIndex = memory.get(i + 3);
         if (opCode == 1) {
           memory.set(destinationIndex, x + y);
         }
@@ -172,16 +161,16 @@ class Day02 extends Base {
   }
 
   Integer part1() {
-    Program program = Program.fromString(inputList().get(0));
+    var program = Program.fromString(inputList().get(0));
     return program.execute(12, 2);
   }
 
   Integer part2() {
-    Program program = Program.fromString(inputList().get(0));
+    var program = Program.fromString(inputList().get(0));
 
     Integer desiredOutput = 19690720;
-    for (int noun = 0; noun <= 99; noun++) {
-      for (int verb = 0; verb <= 99; verb++) {
+    for (var noun = 0; noun <= 99; noun++) {
+      for (var verb = 0; verb <= 99; verb++) {
         if (program.execute(noun, verb).equals(desiredOutput)) {
           return (100 * noun) + verb;
         }
