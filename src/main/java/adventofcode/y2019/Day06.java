@@ -3,11 +3,14 @@ package adventofcode.y2019;
 import static adventofcode.y2019.Base.inputForDay;
 import static java.lang.System.out;
 import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Stream.iterate;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /*
 --- Day 6: Universal Orbit Map ---
@@ -84,7 +87,26 @@ class Day06 {
                          "J)K",
                          "K)L");
 
-      assertThat(computeTotalOrbitCount(buildMap(input))).isEqualTo(42);
+      assertThat(part1(buildMap(input))).isEqualTo(42);
+    }
+
+    @org.junit.jupiter.api.Test
+    void part02() {
+      var input = asList("COM)B",
+                         "B)C",
+                         "C)D",
+                         "D)E",
+                         "E)F",
+                         "B)G",
+                         "G)H",
+                         "D)I",
+                         "E)J",
+                         "J)K",
+                         "K)L",
+                         "K)YOU",
+                         "I)SAN");
+
+      assertThat(part2(buildMap(input))).isEqualTo(4);
     }
 
   }
@@ -92,7 +114,7 @@ class Day06 {
   public static void main(String[] args) {
     var map = buildMap(inputForDay(6));
     out.println(part1(map)); // 278744
-    //    out.println(part2(input));
+    out.println(part2(map)); // 475
   }
 
   private static Map<String, String> buildMap(final List<String> input) {
@@ -100,24 +122,30 @@ class Day06 {
                 .collect(toMap(parts -> parts[1], parts -> parts[0]));
   }
 
-  private static Integer computeTotalOrbitCount(final Map<String, String> map) {
+  private static Stream<String> computeOrbitChainFrom(final String start, final Map<String, String> map) {
+    return iterate(start, it -> map.containsKey(it) || map.containsValue(it), map::get);
+  }
+
+  private static Long computeOrbitDistanceBetween(final Map<String, String> map, final String x, final String y) {
+    var xChain = computeOrbitChainFrom(x, map).collect(toList());
+    var yChain = computeOrbitChainFrom(y, map).collect(toList());
+
+    return xChain.stream().filter(yChain::contains)
+                 .mapToLong(it -> xChain.indexOf(it) + yChain.indexOf(it))
+                 .findFirst().orElseThrow();
+  }
+
+  private static Long computeTotalOrbitsCount(final Map<String, String> map) {
     return map.keySet().stream()
-              .mapToInt(key -> countOribitFor(key, map))
+              .mapToLong(key -> computeOrbitDistanceBetween(map, key, "COM"))
               .sum();
   }
 
-  private static int countOribitFor(final String key, final Map<String, String> map) {
-    if (!map.containsKey(key)) {
-      return 0;
-    }
-    return 1 + countOribitFor(map.get(key), map);
+  private static Long part1(final Map<String, String> map) {
+    return computeTotalOrbitsCount(map);
   }
 
-  private static Integer part1(final Map<String, String> map) {
-    return computeTotalOrbitCount(map);
-  }
-
-  private static Integer part2(final List<String> map) {
-    return 0;
+  private static Long part2(final Map<String, String> map) {
+    return computeOrbitDistanceBetween(map, "YOU", "SAN") - 2;
   }
 }
