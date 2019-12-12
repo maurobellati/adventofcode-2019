@@ -17,9 +17,7 @@ import static java.util.Collections.unmodifiableList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.util.Lists.newArrayList;
 
-import com.google.common.base.MoreObjects;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.ToString;
 
 import java.util.Collection;
@@ -78,6 +76,47 @@ Finally, the program will output a diagnostic code and immediately halt. This fi
 
 After providing 1 to the only input instruction and passing all the tests, what diagnostic code does the program produce?
 
+--- Part Two ---
+
+The air conditioner comes online! Its cold air feels good for a while, but then the TEST alarms start to go off. Since the air conditioner can't vent its heat anywhere but back into the spacecraft, it's actually making the air inside the ship warmer.
+
+Instead, you'll need to use the TEST to extend the thermal radiators. Fortunately, the diagnostic program (your puzzle input) is already equipped for this. Unfortunately, your Intcode computer is not.
+
+Your computer is only missing a few opcodes:
+
+    Opcode 5 is jump-if-true: if the first parameter is non-zero, it sets the instruction pointer to the value from the second parameter. Otherwise, it does nothing.
+    Opcode 6 is jump-if-false: if the first parameter is zero, it sets the instruction pointer to the value from the second parameter. Otherwise, it does nothing.
+    Opcode 7 is less than: if the first parameter is less than the second parameter, it stores 1 in the position given by the third parameter. Otherwise, it stores 0.
+    Opcode 8 is equals: if the first parameter is equal to the second parameter, it stores 1 in the position given by the third parameter. Otherwise, it stores 0.
+
+Like all instructions, these instructions need to support parameter modes as described above.
+
+Normally, after an instruction is finished, the instruction pointer increases by the number of values in that instruction. However, if the instruction modifies the instruction pointer, that value is used and the instruction pointer is not automatically increased.
+
+For example, here are several programs that take one input, compare it to the value 8, and then produce one output:
+
+    3,9,8,9,10,9,4,9,99,-1,8 - Using position mode, consider whether the input is equal to 8; output 1 (if it is) or 0 (if it is not).
+    3,9,7,9,10,9,4,9,99,-1,8 - Using position mode, consider whether the input is less than 8; output 1 (if it is) or 0 (if it is not).
+    3,3,1108,-1,8,3,4,3,99 - Using immediate mode, consider whether the input is equal to 8; output 1 (if it is) or 0 (if it is not).
+    3,3,1107,-1,8,3,4,3,99 - Using immediate mode, consider whether the input is less than 8; output 1 (if it is) or 0 (if it is not).
+
+Here are some jump tests that take an input, then output 0 if the input was zero or 1 if the input was non-zero:
+
+    3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9 (using position mode)
+    3,3,1105,-1,9,1101,0,0,12,4,12,99,1 (using immediate mode)
+
+Here's a larger example:
+
+3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,
+1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,
+999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99
+
+The above example program uses an input instruction to ask for a single number. The program will then output 999 if the input value is below 8, output 1000 if the input value is equal to 8, or output 1001 if the input value is greater than 8.
+
+This time, when the TEST diagnostic program runs its input instruction to get the ID of the system to test, provide it 5, the ID for the ship's thermal radiator controller. This diagnostic test suite only outputs one number, the diagnostic code.
+
+What is the diagnostic code for system ID 5?
+
  */
 class Day05 {
   @ToString
@@ -105,7 +144,6 @@ class Day05 {
     @Getter
     private List<Integer> outputs;
 
-    @Setter
     private Integer programCounter;
 
     private List<Integer> runningMemory;
@@ -130,27 +168,11 @@ class Day05 {
       return unmodifiableList(runningMemory);
     }
 
-    Integer input() {
-      return inputs.remove();
-    }
-
-    void output(Integer value) {
-      outputs.add(value);
-    }
-
-    private String dump() {
-      return MoreObjects.toStringHelper(this)
-                        .add("pc", programCounter)
-                        .add("inputs", inputs)
-                        .add("outputs", outputs)
-                        .add("memory", runningMemory)
-                        .toString();
-    }
-
-    private void emitOutput() {
-      log("output: %s", param(1));
-      output(param(1));
-      incrementProgramCounter(2);
+    private void equals() {
+      var value = param(1).equals(param(2)) ? 1 : 0;
+      log("equals: %s == %s => %s", param(1), param(2), value);
+      writeAt(valueAt(paramIndex(3)), value);
+      incrementProgramCounter(4);
     }
 
     private Collection<Integer> execute() {
@@ -164,7 +186,8 @@ class Day05 {
       programCounter = 0;
 
       while (hasNextInstruction()) {
-        switch (opCode()) {
+        var opCode = valueAt(programCounter) % 100;
+        switch (opCode) {
           case 99:
             terminate();
             break;
@@ -175,20 +198,32 @@ class Day05 {
             multiply();
             break;
           case 3:
-            storeInput();
+            readInput();
             break;
           case 4:
-            emitOutput();
+            writeOutput();
+            break;
+          case 5:
+            jumpIf(param(1) != 0);
+            break;
+          case 6:
+            jumpIf(param(1) == 0);
+            break;
+          case 7:
+            lessThan();
+            break;
+          case 8:
+            equals();
             break;
           default:
-            throw new IllegalStateException(format("OpCode %d not recognized. state=%s", opCode(), this));
+            throw new IllegalStateException(format("OpCode %d not recognized. state=%s", opCode, this));
         }
       }
       return getOutputs();
     }
 
     private ParamMode getMode(final int index) {
-      return mode(paramCodes(), index);
+      return mode(valueAt(programCounter) / 100, index);
     }
 
     private boolean hasNextInstruction() {
@@ -196,21 +231,35 @@ class Day05 {
     }
 
     private void incrementProgramCounter(final int step) {
+      log("PC += %s", step);
       programCounter += step;
     }
 
-    private void log(String format, Object... args) {
-      out.println(format(format, args));
+    private void jumpIf(final boolean condition) {
+      log("jump-if: %s", condition);
+      if (condition) {
+        log("PC = %s", param(2));
+        programCounter = param(2);
+      } else {
+        incrementProgramCounter(3);
+      }
     }
 
-    private void multiply() {
-      log("%s * %s", param(1), param(2));
-      writeAt(valueAt(paramIndex(3)), param(1) * param(2));
+    private void lessThan() {
+      var value = param(1) < param(2) ? 1 : 0;
+      log("less-than: %s < %s => %s", param(1), param(2), value);
+      writeAt(valueAt(paramIndex(3)), value);
       incrementProgramCounter(4);
     }
 
-    private int opCode() {
-      return valueAt(programCounter) % 100;
+    private void log(String format, Object... args) {
+      //out.println(format(format, args));
+    }
+
+    private void multiply() {
+      log("multiply: %s * %s", param(1), param(2));
+      writeAt(valueAt(paramIndex(3)), param(1) * param(2));
+      incrementProgramCounter(4);
     }
 
     private Integer param(final int index) {
@@ -218,29 +267,28 @@ class Day05 {
     }
 
     private Integer param(final int index, final ParamMode mode) {
-      return mode == VALUE ? valueAt(paramIndex(index)) : valueAtAddress(paramIndex(index));
-    }
-
-    private int paramCodes() {
-      return valueAt(programCounter) / 100;
+      return mode == VALUE ? valueAt(paramIndex(index)) : valueAt(valueAt(paramIndex(index)));
     }
 
     private int paramIndex(final int index) {
       return programCounter + index;
     }
 
-    private void storeInput() {
-      writeAt(valueAt(paramIndex(1)), input());
+    private void readInput() {
+      var input = inputs.remove();
+      log("read: %s", input);
+      writeAt(valueAt(paramIndex(1)), input);
       incrementProgramCounter(2);
     }
 
     private void sum() {
-      log("%s + %s", param(1), param(2));
+      log("sum: %s + %s", param(1), param(2));
       writeAt(valueAt(paramIndex(3)), param(1) + param(2));
       incrementProgramCounter(4);
     }
 
     private void terminate() {
+      log("terminate");
       programCounter = PROGRAM_COUNTER_END;
     }
 
@@ -248,13 +296,15 @@ class Day05 {
       return runningMemory.get(index);
     }
 
-    private Integer valueAtAddress(final int index) {
-      return valueAt(valueAt(index));
+    private void writeAt(final int index, final Integer value) {
+      log("[%s] = %s", index, value);
+      runningMemory.set(index, value);
     }
 
-    private void writeAt(final int index, final Integer value) {
-      out.printf("set[%s] = %s%n", index, value);
-      runningMemory.set(index, value);
+    private void writeOutput() {
+      log("output: %s", param(1));
+      outputs.add(param(1));
+      incrementProgramCounter(2);
     }
   }
 
@@ -271,6 +321,45 @@ class Day05 {
       var computer = Computer.parse("3,0,4,0,99");
       var value = 7;
       assertThat(computer.execute(asList(value))).containsOnly(value);
+    }
+
+    @org.junit.jupiter.api.Test
+    void program_evaluateInput8() {
+      var computer = Computer
+        .parse("3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99");
+      assertThat(computer.execute(asList(7))).containsOnly(999);
+      assertThat(computer.execute(asList(8))).containsOnly(1000);
+      assertThat(computer.execute(asList(9))).containsOnly(1001);
+    }
+
+    @org.junit.jupiter.api.Test
+    void program_inputIsEqualTo8_immediateMode() {
+      var computer = Computer.parse("3,3,1108,-1,8,3,4,3,99");
+      assertThat(computer.execute(asList(7))).containsOnly(0);
+      assertThat(computer.execute(asList(8))).containsOnly(1);
+    }
+
+    @org.junit.jupiter.api.Test
+    void program_inputIsEqualTo8_positionMode() {
+      var computer = Computer.parse("3,9,8,9,10,9,4,9,99,-1,8");
+      assertThat(computer.execute(asList(7))).containsOnly(0);
+      assertThat(computer.execute(asList(8))).containsOnly(1);
+    }
+
+    @org.junit.jupiter.api.Test
+    void program_inputIsLessThan8_immediateMode() {
+      var computer = Computer.parse("3,3,1107,-1,8,3,4,3,99");
+      assertThat(computer.execute(asList(7))).containsOnly(1);
+      assertThat(computer.execute(asList(8))).containsOnly(0);
+      assertThat(computer.execute(asList(9))).containsOnly(0);
+    }
+
+    @org.junit.jupiter.api.Test
+    void program_inputIsLessThan8_positionMode() {
+      var computer = Computer.parse("3,9,7,9,10,9,4,9,99,-1,8");
+      assertThat(computer.execute(asList(7))).containsOnly(1);
+      assertThat(computer.execute(asList(8))).containsOnly(0);
+      assertThat(computer.execute(asList(9))).containsOnly(0);
     }
 
     @org.junit.jupiter.api.Test
@@ -291,14 +380,14 @@ class Day05 {
   public static void main(String[] args) {
     var program = inputForDay(5).get(0);
     out.println(part1(program)); // 5346030
-    //    out.println(part2(program));
+    out.println(part2(program)); // 513116
   }
 
   private static Collection<Integer> part1(final String program) {
     return Computer.parse(program).execute(asList(1));
   }
 
-  private static long part2(final String program) {
-    throw new IllegalStateException();
+  private static Collection<Integer> part2(final String program) {
+    return Computer.parse(program).execute(asList(5));
   }
 }
