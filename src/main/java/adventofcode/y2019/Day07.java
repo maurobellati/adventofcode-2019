@@ -10,12 +10,10 @@ import static java.util.stream.IntStream.range;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-import lombok.AllArgsConstructor;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -67,80 +65,144 @@ Here are some example programs:
 
 Try every combination of phase settings on the amplifiers. What is the highest signal that can be sent to the thrusters?
 
+--- Part Two ---
+
+It's no good - in this configuration, the amplifiers can't generate a large enough output signal to produce the thrust you'll need. The Elves quickly talk you through rewiring the amplifiers into a feedback loop:
+
+      O-------O  O-------O  O-------O  O-------O  O-------O
+0 -+->| Amp A |->| Amp B |->| Amp C |->| Amp D |->| Amp E |-.
+   |  O-------O  O-------O  O-------O  O-------O  O-------O |
+   |                                                        |
+   '--------------------------------------------------------+
+                                                            |
+                                                            v
+                                                     (to thrusters)
+
+Most of the amplifiers are connected as they were before; amplifier A's output is connected to amplifier B's input, and so on. However, the output from amplifier E is now connected into amplifier A's input. This creates the feedback loop: the signal will be sent through the amplifiers many times.
+
+In feedback loop mode, the amplifiers need totally different phase settings: integers from 5 to 9, again each used exactly once. These settings will cause the Amplifier Controller Software to repeatedly take input and produce output many times before halting. Provide each amplifier its phase setting at its first input instruction; all further input/output instructions are for signals.
+
+Don't restart the Amplifier Controller Software on any amplifier during this process. Each one should continue receiving and sending signals until it halts.
+
+All signals sent or received in this process will be between pairs of amplifiers except the very first signal and the very last signal. To start the process, a 0 signal is sent to amplifier A's input exactly once.
+
+Eventually, the software on the amplifiers will halt after they have processed the final loop. When this happens, the last output signal from amplifier E is sent to the thrusters. Your job is to find the largest output signal that can be sent to the thrusters using the new phase settings and feedback loop arrangement.
+
+Here are some example programs:
+
+    Max thruster signal 139629729 (from phase setting sequence 9,8,7,6,5):
+
+    3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,
+    27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5
+
+    Max thruster signal 18216 (from phase setting sequence 9,7,8,5,6):
+
+    3,52,1001,52,-5,52,3,53,1,52,56,54,1007,54,5,55,1005,55,26,1001,54,
+    -5,54,1105,1,12,1,53,54,53,1008,54,0,55,1001,55,1,55,2,53,55,53,4,
+    53,1001,56,-1,56,1005,56,6,99,0,0,0,0,10
+
+Try every combination of the new phase settings on the amplifier feedback loop. What is the highest signal that can be sent to the thrusters?
+
 */
 class Day07 {
+  static class Amplifiers {
+    private final List<Computer> amplifiers;
 
-  @AllArgsConstructor
-  static class Amplifier {
-    private final Computer computer;
-
-    Integer run(final Integer phaseSetting, final Integer inputSignal) {
-      var outputs = computer.execute(newArrayList(phaseSetting, inputSignal));
-      return outputs.get(0);
-    }
-  }
-
-  static class AmplifierSerie {
-    private final List<Amplifier> amplifiers;
-
-    AmplifierSerie(final String program, final Integer count) {
-      amplifiers = range(0, count).mapToObj(i -> new Amplifier(Computer.parse(program)))
+    Amplifiers(final String program, final Integer count) {
+      amplifiers = range(0, count).mapToObj(i -> Computer.parse(program))
                                   .collect(toList());
     }
 
     Integer execute(final List<Integer> phaseSettings) {
       checkArgument(phaseSettings.size() == amplifiers.size());
+      amplifiers.forEach(Computer::reset);
 
-      var signal = 0;
-      for (var i = 0; i < phaseSettings.size(); i++) {
-        var amplifier = amplifiers.get(i);
-        signal = amplifier.run(phaseSettings.get(i), signal);
+      List<Integer> inputs = newArrayList(phaseSettings);
+      List<Integer> signals = newArrayList(0);
+      var i = 0;
+      while (amplifiers.stream().anyMatch(Computer::isRunning)) {
+        var amplifier = amplifiers.get(i % amplifiers.size());
+
+        if (!inputs.isEmpty()) {
+          signals.add(0, inputs.remove(0));
+        }
+
+        signals = amplifier.execute(signals);
+        i++;
       }
-      return signal;
+
+      return signals.get(0);
     }
+
   }
 
   static class Test {
-    static Stream<Arguments> examples() {
-      return Stream.of(
-        arguments("3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0", asList(4, 3, 2, 1, 0), 43210),
-        arguments("3,23,3,24,1002,24,10,24,1002,23,-1,23,101,5,23,23,1,24,23,23,4,23,99,0,0", asList(0, 1, 2, 3, 4), 54321),
-        arguments("3,31,3,32,1002,32,10,32,1001,31,-2,31,1007,31,0,33,1002,33,7,33,1,33,31,31,1,32,31,31,4,31,99,0,0,0", asList(1, 0, 4, 3, 2), 65210)
-      );
+    static class Part01 {
+      static Stream<Arguments> examples() {
+        return Stream.of(
+          arguments("3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0", asList(4, 3, 2, 1, 0), 43210),
+          arguments("3,23,3,24,1002,24,10,24,1002,23,-1,23,101,5,23,23,1,24,23,23,4,23,99,0,0", asList(0, 1, 2, 3, 4), 54321),
+          arguments("3,31,3,32,1002,32,10,32,1001,31,-2,31,1007,31,0,33,1002,33,7,33,1,33,31,31,1,32,31,31,4,31,99,0,0,0", asList(1, 0, 4, 3, 2), 65210)
+        );
+      }
+
+      @ParameterizedTest
+      @MethodSource("examples")
+      void maxSignal(final String program, final List<Integer> phaseSettings, final Integer expectedMaxSignal) {
+        assertThat(part1(program)).isEqualTo(expectedMaxSignal);
+      }
+
+      @ParameterizedTest
+      @MethodSource("examples")
+      void signal(final String program, final List<Integer> phaseSettings, final Integer expectedMaxSignal) {
+        var amplifierSerie = new Amplifiers(program, phaseSettings.size());
+        var actual = amplifierSerie.execute(phaseSettings);
+        assertThat(actual).isEqualTo(expectedMaxSignal);
+      }
     }
 
-    @ParameterizedTest
-    @MethodSource("examples")
-    void maxSignal(final String program, final List<Integer> phaseSettings, final Integer expectedMaxSignal) {
-      assertThat(findMaxSignal(program, 5)).isEqualTo(expectedMaxSignal);
-    }
+    static class Part02 {
+      static Stream<Arguments> examples() {
+        return Stream.of(
+          arguments("3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5", asList(9, 8, 7, 6, 5), 139629729),
+          arguments(
+            "3,52,1001,52,-5,52,3,53,1,52,56,54,1007,54,5,55,1005,55,26,1001,54,-5,54,1105,1,12,1,53,54,53,1008,54,0,55,1001,55,1,55,2,53,55,53,4,53,1001,56,-1,56,1005,56,6,99,0,0,0,0,10",
+            asList(9, 7, 8, 5, 6),
+            18216)
+        );
+      }
 
-    @ParameterizedTest
-    @MethodSource("examples")
-    void signal(final String program, final List<Integer> phaseSettings, final Integer expectedMaxSignal) {
-      var amplifierSerie = new AmplifierSerie(program, phaseSettings.size());
-      var actual = amplifierSerie.execute(phaseSettings);
-      assertThat(actual).isEqualTo(expectedMaxSignal);
+      @ParameterizedTest
+      @MethodSource("examples")
+      void maxSignal(final String program, final List<Integer> phaseSettings, final Integer expectedMaxSignal) {
+        assertThat(part2(program)).isEqualTo(expectedMaxSignal);
+      }
+
+      @ParameterizedTest
+      @MethodSource("examples")
+      void signal(final String program, final List<Integer> phaseSettings, final Integer expectedMaxSignal) {
+        var amplifierSerie = new Amplifiers(program, phaseSettings.size());
+        var actual = amplifierSerie.execute(phaseSettings);
+        assertThat(actual).isEqualTo(expectedMaxSignal);
+      }
     }
   }
 
   public static void main(String[] args) {
     var program = inputForDay(7).get(0);
-    out.println(part1(program));
-    //    out.println(part2(program));
-  }
-
-  private static Integer findMaxSignal(final String program, final int count) {
-    var amplifierSerie = new AmplifierSerie(program, count);
-    var phases = newArrayList(0, 1, 2, 3, 4);
-    return Permutations.permutations(phases).mapToInt(amplifierSerie::execute).max().orElseThrow();
+    out.println(part1(program)); // 914828
+    out.println(part2(program)); // 17956613
   }
 
   private static Integer part1(final String program) {
-    return findMaxSignal(program, 5);
+    var amplifiers = new Amplifiers(program, 5);
+    var phases = newArrayList(0, 1, 2, 3, 4);
+    return Permutations.permutations(phases).mapToInt(amplifiers::execute).max().orElseThrow();
   }
 
-  private static Collection<Integer> part2(final String program) {
-    throw new IllegalStateException();
+  private static Integer part2(final String program) {
+    var amplifiers = new Amplifiers(program, 5);
+    var phases = newArrayList(5, 6, 7, 8, 9);
+    return Permutations.permutations(phases).mapToInt(amplifiers::execute).max().orElseThrow();
   }
 }

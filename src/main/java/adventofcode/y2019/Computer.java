@@ -3,7 +3,6 @@ package adventofcode.y2019;
 import static adventofcode.y2019.Base.splitAndMap;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.Queues.newArrayDeque;
 import static java.lang.StrictMath.pow;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
@@ -15,7 +14,6 @@ import lombok.ToString;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Queue;
 
 @ToString
 class Computer {
@@ -36,12 +34,10 @@ class Computer {
   private static final int PROGRAM_COUNTER_END = -1;
 
   private final List<Integer> initialMemory;
-
-  private Queue<Integer> inputs;
-
+  private List<Integer> inputs;
   @Getter
   private List<Integer> outputs;
-
+  private boolean paused;
   private Integer programCounter;
 
   private List<Integer> runningMemory;
@@ -49,7 +45,7 @@ class Computer {
   private Computer(final List<Integer> memory) {
     initialMemory = newArrayList(memory);
     runningMemory = newArrayList(memory);
-    inputs = newArrayDeque();
+    inputs = newArrayList();
     outputs = newArrayList();
     programCounter = 0;
   }
@@ -67,12 +63,12 @@ class Computer {
   }
 
   List<Integer> execute(final Collection<Integer> inputs) {
-    this.inputs = newArrayDeque(inputs);
+    log("execute with %s", inputs);
+    this.inputs = newArrayList(inputs);
     outputs = newArrayList();
-    runningMemory = newArrayList(initialMemory);
-    programCounter = 0;
 
-    while (hasNextInstruction()) {
+    paused = false;
+    while (hasNextInstruction() && !paused) {
       var opCode = valueAt(programCounter) % 100;
       switch (opCode) {
         case 99:
@@ -113,6 +109,15 @@ class Computer {
     return unmodifiableList(runningMemory);
   }
 
+  boolean isRunning() {
+    return hasNextInstruction();
+  }
+
+  void reset() {
+    runningMemory = newArrayList(initialMemory);
+    programCounter = 0;
+  }
+
   private void equals() {
     var value = param(1).equals(param(2)) ? 1 : 0;
     log("equals: %s == %s => %s", param(1), param(2), value);
@@ -151,7 +156,7 @@ class Computer {
   }
 
   private void log(String format, Object... args) {
-    //out.println(format(format, args));
+//    System.out.println(format(format, args));
   }
 
   private void multiply() {
@@ -173,7 +178,13 @@ class Computer {
   }
 
   private void readInput() {
-    var input = inputs.remove();
+    if (inputs.isEmpty()) {
+      log("pause wating for input");
+      paused = true;
+      return;
+    }
+
+    var input = inputs.remove(0);
     log("read: %s", input);
     writeAt(valueAt(paramIndex(1)), input);
     incrementProgramCounter(2);
