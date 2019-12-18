@@ -117,8 +117,8 @@ class Day07 {
       checkArgument(phaseSettings.size() == amplifiers.size());
       amplifiers.forEach(Computer::reset);
 
-      List<Integer> inputs = newArrayList(phaseSettings);
-      List<Integer> signals = newArrayList(0);
+      var inputs = phaseSettings.stream().mapToLong(Long::valueOf).boxed().collect(toList());
+      List<Long> signals = newArrayList(0L);
       var i = 0;
       while (amplifiers.stream().anyMatch(Computer::isRunning)) {
         var amplifier = amplifiers.get(i % amplifiers.size());
@@ -131,7 +131,7 @@ class Day07 {
         i++;
       }
 
-      return signals.get(0);
+      return signals.get(0).intValue();
     }
 
   }

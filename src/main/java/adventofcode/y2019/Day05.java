@@ -1,15 +1,14 @@
 package adventofcode.y2019;
 
 import static adventofcode.y2019.Base.inputForDay;
-import static adventofcode.y2019.Computer.ParamMode.ADDRESS;
-import static adventofcode.y2019.Computer.ParamMode.VALUE;
+import static adventofcode.y2019.Computer.ParamMode.POSITION;
+import static adventofcode.y2019.Computer.ParamMode.IMMEDIATE;
 import static adventofcode.y2019.Computer.ParamMode.mode;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Queues.newArrayDeque;
 import static java.lang.String.format;
 import static java.lang.System.out;
-import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.util.Lists.newArrayList;
 
@@ -114,69 +113,85 @@ class Day05 {
   static class Test {
     @org.junit.jupiter.api.Test
     void parseParamMode() {
-      assertThat(mode(10, 1)).isEqualTo(ADDRESS);
-      assertThat(mode(10, 2)).isEqualTo(VALUE);
-      assertThat(mode(10, 3)).isEqualTo(ADDRESS);
+      assertThat(mode(10, 1)).isEqualTo(POSITION);
+      assertThat(mode(10, 2)).isEqualTo(IMMEDIATE);
+      assertThat(mode(10, 3)).isEqualTo(POSITION);
     }
 
     @org.junit.jupiter.api.Test
     void program_copyInputToOutput() {
       var computer = Computer.parse("3,0,4,0,99");
-      var value = 7;
-      assertThat(computer.execute(asList(value))).containsOnly(value);
+      var value = 7L;
+      assertThat(computer.execute(value)).containsOnly(value);
     }
 
     @org.junit.jupiter.api.Test
     void program_evaluateInput8() {
       var computer = Computer
         .parse("3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99");
-      assertThat(computer.execute(asList(7))).containsOnly(999);
-      assertThat(computer.execute(asList(8))).containsOnly(1000);
-      assertThat(computer.execute(asList(9))).containsOnly(1001);
+      assertThat(computer.execute(7L)).containsOnly(999L);
+
+      computer.reset();
+      assertThat(computer.execute(8L)).containsOnly(1000L);
+
+      computer.reset();
+      assertThat(computer.execute(9L)).containsOnly(1001L);
     }
 
     @org.junit.jupiter.api.Test
     void program_inputIsEqualTo8_immediateMode() {
       var computer = Computer.parse("3,3,1108,-1,8,3,4,3,99");
-      assertThat(computer.execute(asList(7))).containsOnly(0);
-      assertThat(computer.execute(asList(8))).containsOnly(1);
+      assertThat(computer.execute(7L)).containsOnly(0L);
+
+      computer.reset();
+      assertThat(computer.execute(8L)).containsOnly(1L);
     }
 
     @org.junit.jupiter.api.Test
     void program_inputIsEqualTo8_positionMode() {
       var computer = Computer.parse("3,9,8,9,10,9,4,9,99,-1,8");
-      assertThat(computer.execute(asList(7))).containsOnly(0);
-      assertThat(computer.execute(asList(8))).containsOnly(1);
+      assertThat(computer.execute(7L)).containsOnly(0L);
+
+      computer.reset();
+      assertThat(computer.execute(8L)).containsOnly(1L);
     }
 
     @org.junit.jupiter.api.Test
     void program_inputIsLessThan8_immediateMode() {
       var computer = Computer.parse("3,3,1107,-1,8,3,4,3,99");
-      assertThat(computer.execute(asList(7))).containsOnly(1);
-      assertThat(computer.execute(asList(8))).containsOnly(0);
-      assertThat(computer.execute(asList(9))).containsOnly(0);
+      assertThat(computer.execute(7L)).containsOnly(1L);
+
+      computer.reset();
+      assertThat(computer.execute(8L)).containsOnly(0L);
+
+      computer.reset();
+      assertThat(computer.execute(9L)).containsOnly(0L);
     }
 
     @org.junit.jupiter.api.Test
     void program_inputIsLessThan8_positionMode() {
       var computer = Computer.parse("3,9,7,9,10,9,4,9,99,-1,8");
-      assertThat(computer.execute(asList(7))).containsOnly(1);
-      assertThat(computer.execute(asList(8))).containsOnly(0);
-      assertThat(computer.execute(asList(9))).containsOnly(0);
+      assertThat(computer.execute(7L)).containsOnly(1L);
+
+      computer.reset();
+      assertThat(computer.execute(8L)).containsOnly(0L);
+
+      computer.reset();
+      assertThat(computer.execute(9L)).containsOnly(0L);
     }
 
     @org.junit.jupiter.api.Test
     void program_negativeParams() {
       var computer = Computer.parse("1101,100,-1,4,0");
       computer.execute();
-      assertThat(computer.getRunningMemory()).containsExactly(1101, 100, -1, 4, 99);
+      assertThat(computer.getRunningMemory()).containsExactly(1101L, 100L, -1L, 4L, 99L);
     }
 
     @org.junit.jupiter.api.Test
     void program_paramModes() {
       var computer = Computer.parse("1002,4,3,4,33");
       computer.execute();
-      assertThat(computer.getRunningMemory()).containsExactly(1002, 4, 3, 4, 99);
+      assertThat(computer.getRunningMemory()).containsExactly(1002L, 4L, 3L, 4L, 99L);
     }
   }
 
@@ -186,11 +201,11 @@ class Day05 {
     out.println(part2(program)); // 513116
   }
 
-  private static Collection<Integer> part1(final String program) {
-    return Computer.parse(program).execute(asList(1));
+  private static Collection<Long> part1(final String program) {
+    return Computer.parse(program).execute(1L);
   }
 
-  private static Collection<Integer> part2(final String program) {
-    return Computer.parse(program).execute(asList(5));
+  private static Collection<Long> part2(final String program) {
+    return Computer.parse(program).execute(5L);
   }
 }
