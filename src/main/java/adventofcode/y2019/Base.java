@@ -3,6 +3,7 @@ package adventofcode.y2019;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.io.Resources.getResource;
 import static com.google.common.io.Resources.readLines;
+import static java.lang.System.lineSeparator;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.Splitter;
@@ -32,6 +33,10 @@ public abstract class Base {
 
   static List<String> parseCsv(final String input) {
     return CSV_SPLITTER.splitToList(input);
+  }
+
+  static List<String> lines(final String input) {
+    return Splitter.on(lineSeparator()).trimResults().omitEmptyStrings().splitToList(input);
   }
 
   static <T> List<T> splitAndMap(String aString, String splitOn, Function<String, T> mapper) {
